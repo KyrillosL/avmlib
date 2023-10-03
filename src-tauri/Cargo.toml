@@ -16,8 +16,23 @@ tauri-build = { version = "1.4", features = [] }
 tauri = { version = "1.4", features = ["shell-open"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+rand = "*"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
+
+#Setting the CPU Flag to compile F-A-S-T
+#You probably want RUSTFLAGS="-Ctarget-cpu=native", not cargo rustc -- -Ctarget-cpu=native.
+#The former applies the flags to all compilations, even dependencies,
+#the latter only does it for the topmost crate in the deptree.
+#RUSTFLAGS="-Ctarget-cpu=native"
+[build]
+rustflags = ["-Ctarget-cpu=native"]
+
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+opt-level = 3
