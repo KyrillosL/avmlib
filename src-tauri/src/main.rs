@@ -7,33 +7,55 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+type Precision = f64;
+const SIZE_INPUT: usize = 4;
+const N_NEURONS : usize = 3;
+
+struct Neuron {
+    weights: [Precision; SIZE_INPUT],
+    bias: Precision
+}
+
+struct Layer {
+    neurons: [Neuron; N_NEURONS]
+}
+
+fn Compute(layer: &Layer, input: &[Precision; SIZE_INPUT]) -> Precision {
+    let mut output = 0.0;
+    for n in 0..N_NEURONS {
+        let mut output_tmp = layer.neurons[n].bias;
+        for i in 0..SIZE_INPUT {
+            output_tmp += layer.neurons[n].weights[i] * input[i];
+        }
+        output += output_tmp;
+    }
+    return output;
+}
+
+
+
 fn main() {
 
     println!("Start");
-    /*
-    let output = inputs[0] * weights[0] + inputs[1] * weights[1] + inputs[2] * weights[2] + bias;
-    println!("output : {}", output);
-    */
+    let inputs: [Precision; SIZE_INPUT] = [1.0, 2.0, 3.0, 2.5];
+    let neuron_1 = Neuron {weights: [0.2, 0.8, -0.5, 1.0], bias: 2.0 };
+    let neuron_2 = Neuron {weights: [0.5, -0.91, 0.26, -0.5], bias: 3.0 };
+    let neuron_3 = Neuron {weights: [-0.26, -0.27, 0.17, 0.87], bias: 0.5 };
+    let layer1 = Layer { neurons : [neuron_1, neuron_2, neuron_3]};
+    let result = Compute(&layer1, &inputs);
+    println!("output : {}", result);
 
-    type precision = f64;
 
-    const SIZE : usize = 3;
-    let inputs: [precision; SIZE] = [1.0, 2.0, 3.0];
-    let weights: [precision; SIZE] = [0.2, 0.8, -0.5];
+/*
+    let weights: [Precision; SIZE_INPUT] = [0.2, 0.8, -0.5];
     let bias = 2.0;
 
-    let mut output2 = bias;
-    for i in 0..SIZE{
-        output2 += inputs[i] * weights[i];
+    let mut output = bias;
+    for i in 0..SIZE_INPUT {
+        output += inputs[i] * weights[i];
     }
-    println!("output2 : {}", output2);
-
-    let mut output3 = 0.0;
-    for i in 0..SIZE{
-        output3 += inputs[i] * weights[i];
-    }
-    output3 += bias;
-    println!("output3 : {}", output3);
+    println!("output2 : {}", output);
+*/
 
 
     /*
