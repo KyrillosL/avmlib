@@ -26,9 +26,19 @@ struct Layer {
 }
 
 fn compute(layer: &Layer, input: &Vec<Precision>) -> Vec<Precision> {
+    let use_native: bool = input.len() < 8;
+    if use_native {
+        println!("Warning, using naive_native_rust, the len of the input vector is < 8");
+    }
     let mut output :Vec<Precision> = vec![];
     for n in 0..N_NEURONS {
-        output.push(dot_product_simd(&layer.neurons[n].weights, input) + layer.neurons[n].bias);
+        if use_native{
+            output.push(naive_native_rust(&layer.neurons[n].weights, input) + layer.neurons[n].bias);
+        }
+        else {
+            output.push(dot_product_simd(&layer.neurons[n].weights, input) + layer.neurons[n].bias);
+        }
+
     }
     return output;
 }
