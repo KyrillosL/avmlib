@@ -3,10 +3,8 @@
 
 
 mod constants;
-use crate::constants::*;
-
-mod dot_product;
-use crate::dot_product::*;
+use avmlib::constants::*;
+use avmlib::dot_product::*;
 
 /*
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command

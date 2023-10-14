@@ -21,6 +21,7 @@ ndarray = { version = "0.15.0", features = ["blas"] }
 ndarray-rand = "0.14"
 blas-src = { version = "0.8", features = ["openblas"] }
 openblas-src = { version = "0.10", features = ["cblas", "system"] }
+criterion = { version = "*", features = ["html_reports"] }
 
 packed_simd="*"
 
@@ -35,10 +36,14 @@ custom-protocol = ["tauri/custom-protocol"]
 #the latter only does it for the topmost crate in the deptree.
 #RUSTFLAGS="-Ctarget-cpu=native"
 [build]
-rustflags = ["-Ctarget-cpu=native"]
+rustflags = ["-Ctarget-cpu=native"] #plus portable pour les autres processors
 
 [profile.dev]
 opt-level = 0
 
 [profile.release]
 opt-level = 3
+
+[[bench]]
+name = "benchmarks"
+harness = false
