@@ -22,7 +22,7 @@ ndarray-rand = "0.14"
 blas-src = { version = "0.8", features = ["openblas"] }
 openblas-src = { version = "0.10", features = ["cblas", "system"] }
 criterion = { version = "*", features = ["html_reports"] }
-nalgebra = "*"
+nalgebra = { version = "*", features = ["rand"] }
 packed_simd="*"
 
 [features]
