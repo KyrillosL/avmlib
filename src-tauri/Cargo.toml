@@ -24,6 +24,8 @@ openblas-src = { version = "0.10", features = ["cblas", "system"] }
 criterion = { version = "*", features = ["html_reports"] }
 nalgebra = { version = "*", features = ["rand"] }
 packed_simd="*"
+plotters = "*"
+rand_xorshift="*"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
