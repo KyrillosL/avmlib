@@ -43,6 +43,19 @@ impl Default for DenseLayer {
 */
 
 
+fn ReluActivation(inputs: &DMatrix<Precision>) -> DMatrix<Precision>{
+    return  inputs.map(ReluFunction);
+}
+
+fn ReluFunction(x: Precision) -> Precision{
+    return if x <= 0.0 {
+        0.0
+    } else {
+        x
+    }
+}
+
+
 impl DenseLayer{
     fn new(batch_size : usize, n_inputs: usize, n_neurons: usize) -> Self {
         Self {
@@ -145,7 +158,10 @@ fn main() {
 
     //atm the batch size is linked to the number of neurons
     let layer1 = DenseLayer::new( batch_size, n_samples_inputs, n_neurons); //3 rows, 4 cols
-    layer1.forward(&inputs);
+    let lf1 = layer1.forward(&inputs);
+    let activated = ReluActivation(&lf1);
+    println!("{}", activated);
+
 
     /*
     tauri::Builder::default()
@@ -153,5 +169,7 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
      */
+
+    //println!("{}", Relu(2.0));
 
 }
