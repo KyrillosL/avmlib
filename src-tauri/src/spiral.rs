@@ -5,22 +5,27 @@ use plotters::prelude::*;
 
 pub fn create_data_spiral(samples: usize, classes: usize) -> (Vec<f64>, Vec<f64>, Vec<u32>) /* -> (Vec<(f64, f64)>, Vec<u8>)*/{
 
-    const N: usize = 100; // number of points per class
-    const D: usize = 2; // dimensionality
-    const K: usize = 3; // number of classes
+    let n = samples / classes;
+    //println!("{}", n);
+    assert_eq!(samples % classes, 0, "The number of samples must be a multiple of the number of class");
 
-    let mut x = vec![0.0; N * K];
-    let mut y = vec![0.0; N * K];
-    let mut c = vec![0; N * K];
+    let mut x = vec![0.0; samples];
+    let mut y = vec![0.0; samples];
+    let mut c = vec![0; samples];
 
-    for j in 0..K {
-        let ix = N * j..N * (j+1);
-        let r = (0..N).map(|n| n as f64 / N as f64);
+    for j in 0..classes {
+        //Range : 0->33, 33->66, 66->99
+        let ix = n * j..n * (j+1);
+
+        //Map
+        let r = (0..n).map(|n2| n2 as f64 / n as f64);
+
         let mut rng = rand::thread_rng();
-        let t = (0..N)
-            .map(|n| {
+
+        let t = (0..samples)
+            .map(|n2| {
                 let t = j as f64 * 4.0 + rng.gen::<f64>() * 0.2;
-                t + n as f64 * 4.0 / N as f64
+                t + n2 as f64 * 4.0 / n as f64
             });
 
         for (i, (r_val, t_val)) in r.zip(t).enumerate() {
@@ -30,6 +35,32 @@ pub fn create_data_spiral(samples: usize, classes: usize) -> (Vec<f64>, Vec<f64>
             c[index] = j as u32;
         }
     }
+
+
+    /*
+    let mut x = vec![0.0; samples*classes];
+    let mut y = vec![0.0; samples*classes];
+    let mut c = vec![0; samples*classes];
+
+    for j in 0..classes {
+        let ix = samples * j..samples * (j+1);
+        let r = (0..samples).map(|n| n as f64 / samples as f64);
+        let mut rng = rand::thread_rng();
+        let t = (0..samples)
+            .map(|n| {
+                let t = j as f64 * 4.0 + rng.gen::<f64>() * 0.2;
+                t + n as f64 * 4.0 / samples as f64
+            });
+
+        for (i, (r_val, t_val)) in r.zip(t).enumerate() {
+            let index = ix.start + i;
+            x[index] = r_val * f64::sin(t_val);
+            y[index] = r_val * f64::cos(t_val);
+            c[index] = j as u32;
+        }
+    }
+    */
+    /*
     println!("x{:?}", x);
     println!("y{:?}", y);
     println!("c{:?}", c);
@@ -37,13 +68,14 @@ pub fn create_data_spiral(samples: usize, classes: usize) -> (Vec<f64>, Vec<f64>
     println!("{}", x.len());
     println!("{}", y.len());
     println!("{}", c.len());
+    */
     (x, y, c)
 
 
 }
 
 
-pub fn visualize(x: Vec<f64>, y: Vec<f64>, c: Vec<u32>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn visualize(x: &Vec<f64>, y: &Vec<f64>, c: &Vec<u32>) -> Result<(), Box<dyn std::error::Error>> {
     // Visualize the data
     let root =
         BitMapBackend::new("plots/scatter.png", (800, 600)).into_drawing_area();
@@ -54,7 +86,7 @@ pub fn visualize(x: Vec<f64>, y: Vec<f64>, c: Vec<u32>) -> Result<(), Box<dyn st
     let y_min = -1.0;
     let y_max = 1.0;
 
-    let ok : Vec<(&f64, &f64, &u32)> = izip!(&x, &y, &c).collect();
+    let ok : Vec<(&f64, &f64, &u32)> = izip!(x, y, c).collect();
 
     let mut chart = ChartBuilder::on(&root)
         .x_label_area_size(40)
