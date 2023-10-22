@@ -11,6 +11,8 @@ use avmlib::constants::*;
 use avmlib::sine::*;
 use avmlib::spiral::*;
 
+use std::ops::DivAssign;
+
 //use avmlib::dot_product::*;
 extern crate nalgebra as na;
 use na::{U2, U3, Dyn, ArrayStorage, VecStorage, Matrix, Matrix3x4, RowVector4, Vector, Matrix1x4, DMatrix, Vector3, RowVector3, MatrixXx3, Matrix4x3, Vector4, RowDVector};
@@ -42,8 +44,23 @@ impl Default for DenseLayer {
 }
 */
 
+fn SoftMax(r: usize, c: usize, inputs: &DMatrix<Precision>) -> DMatrix<Precision>{
+    assert_eq!(r, inputs.nrows());
+    assert_eq!(c, inputs.ncols());
+    //TODO : use Apply()
+    //m.apply(|v| v.exp());
+    let mut e = inputs.map(|v| v.exp());
+    println!("{}", &e);
+    let v4 = DMatrix::<Precision>::from_fn(r, c, |i, _| e.row(i).iter().sum());
+
+    for j in 0..r {
+        e.row_mut(j).div_assign(v4[j])
+    }
+    return e;
+}
 
 fn ReluActivation(inputs: &DMatrix<Precision>) -> DMatrix<Precision>{
+    //Todo : use inputs.apply();
     return  inputs.map(ReluFunction);
 }
 
@@ -121,7 +138,8 @@ fn main() {
 
     //TODO : FOR NOW BATCH_SIZE == n_samples == 100 -> 2 batchs of 50 ?
     let n_samples_inputs = 2;
-    let n_neurons = 2;
+    let n_neurons_layer1 = 2;
+    let n_neurons_layer2 = 3;
     let n_class = 3;
     let n_generated_samples_dataset = 12;
 
@@ -134,34 +152,21 @@ fn main() {
     println!("y: {:?}", &y);
     println!("c: {:?}", &c);
 
+    let inputs = get_inputs(&x, &y, n_samples_inputs, batch_size);
 
-
-    //let zipped : Vec<(&f64, &f64)> = x.iter().zip(y.iter()).collect();
-    let vecofvec : Vec<&Vec<f64>> = vec![&x, &y];
-    assert_eq!(vecofvec.len(), n_samples_inputs, "The number of sample must be the same as the number of element in the vector");
-
-    println!("VecOfvec{:?}", vecofvec);
-
-
-    let mut inputs = DMatrix::<Precision>::zeros(n_samples_inputs, batch_size);
-    for i in 0..n_samples_inputs{
-        //TODO : DONT COPY !
-        let row: RowDVector<Precision> =  RowDVector::from_vec( vecofvec[i].to_vec());
-        let (shapex, shapey) = row.shape();
-        //println!("{}, {}", shapex, shapey);
-        inputs.set_row(i, &row);
-    }
-    inputs = inputs.transpose();
-    println!("Inputs{}", inputs);
 
     //n_neurons MUST BE == WITH input_batch_size
 
     //atm the batch size is linked to the number of neurons
-    let layer1 = DenseLayer::new( batch_size, n_samples_inputs, n_neurons); //3 rows, 4 cols
+    let layer1 = DenseLayer::new( batch_size, n_samples_inputs, n_neurons_layer1);
     let lf1 = layer1.forward(&inputs);
-    let activated = ReluActivation(&lf1);
-    println!("{}", activated);
+    let activated1 = ReluActivation(  &lf1);
+    println!("{}", activated1);
 
+    let layer2 = DenseLayer::new( batch_size, n_neurons_layer1, n_neurons_layer2);
+    let lf2 = layer2.forward(&activated1);
+    let softed_max = SoftMax(batch_size,n_neurons_layer2,&lf2);
+    println!("{}", softed_max);
 
     /*
     tauri::Builder::default()

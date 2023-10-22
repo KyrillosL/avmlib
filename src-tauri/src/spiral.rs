@@ -2,6 +2,9 @@ use rand::Rng;
 use itertools::izip;
 extern crate plotters;
 use plotters::prelude::*;
+use crate::constants::*;
+use nalgebra::{DMatrix, RowDVector};
+
 
 pub fn create_data_spiral(samples: usize, classes: usize) -> (Vec<f64>, Vec<f64>, Vec<u32>) /* -> (Vec<(f64, f64)>, Vec<u8>)*/{
 
@@ -106,5 +109,26 @@ pub fn visualize(x: &Vec<f64>, y: &Vec<f64>, c: &Vec<u32>) -> Result<(), Box<dyn
     )));
 
     Ok(())
+}
+
+
+pub fn  get_inputs(x: &Vec<Precision>, y: &Vec<Precision>, n_samples_inputs: usize, batch_size: usize) -> DMatrix::<Precision>{
+    let vecofvec : Vec<&Vec<Precision>> = vec![&x, &y];
+
+    assert_eq!(vecofvec.len(), n_samples_inputs, "The number of sample must be the same as the number of element in the vector");
+
+    println!("VecOfvec{:?}", vecofvec);
+
+    let mut inputs = DMatrix::<Precision>::zeros(n_samples_inputs, batch_size);
+    for i in 0..n_samples_inputs{
+        //TODO : DONT COPY !
+        let row: RowDVector<Precision> =  RowDVector::from_vec( vecofvec[i].to_vec());
+        //let (shapex, shapey) = row.shape();
+        //println!("{}, {}", shapex, shapey);
+        inputs.set_row(i, &row);
+    }
+    inputs = inputs.transpose();
+    println!("Inputs{}", inputs);
+    return inputs;
 }
 
