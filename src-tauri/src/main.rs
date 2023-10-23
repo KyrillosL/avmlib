@@ -82,24 +82,14 @@ impl DenseLayer{
 
             //TODO : Put this in tests !
             /*
-                        let inputs = DMatrix::from_row_slice(batch_size,n_samples_inputs, &[
-                        1.0, 2.0, 3.0, 2.5,
-                        2.0, 5.0, -1.0, 2.0,
-                        -1.5, 2.7, 3.3, -0.8,
-                        ]);
-                        println!("inputs : {}", inputs);
-                        weights : DMatrix::from_row_slice(n_neurons, n_inputs,  &[
-                            0.2, 0.8, -0.5, 1.0,
-                            0.5, -0.91, 0.26, -0.5,
-                            -0.26, -0.27, 0.17, 0.87
-                        ]),
-                        biases : RowDVector::from_vec(vec![2.0, 3.0, 0.5]),
+
+
             */
             weights: DMatrix::new_random(n_neurons, n_inputs),
             biases: RowDVector::zeros(n_neurons),
         }
     }
-    fn forward(&self, inputs: &DMatrix<Precision>) -> DMatrix<Precision> {
+    fn forward(&self, inputs: &DMatrix<Precision>, weights: &DMatrix<Precision>, biases: &RowDVector<Precision>) -> DMatrix<Precision> {
 
         //Convert unique vector (x, y, z) to :
         //For a 4*3 input :
@@ -110,14 +100,15 @@ impl DenseLayer{
           │ x y z │
           └       ┘
          */
+        //TODO -> use apply for biases
         let mut bs = DMatrix::<Precision>::zeros(self.batch_size, self.n_neurons);   //(&[self.biases]);
         for i in 0..self.batch_size{
-            bs.set_row(i, &self.biases);
+            bs.set_row(i,  &biases);
         }
         println!("bs{}", bs);
 
-        println!("Weights{}", self.weights);
-        let transposed = self.weights.transpose();
+        println!("Weights{}", weights);
+        let transposed = weights.transpose();
         println!("Transposed{}", transposed);
         let mult = inputs * &transposed;
         println!("mult{}", mult);
@@ -132,9 +123,10 @@ impl DenseLayer{
 
 
 fn main() {
+
+    //TODO -> Use compile time !!
     env::set_var("RUST_BACKTRACE", "1");
     println!("Start");
-
 
     //TODO : FOR NOW BATCH_SIZE == n_samples == 100 -> 2 batchs of 50 ?
     let n_samples_inputs = 2;
@@ -158,13 +150,14 @@ fn main() {
     //n_neurons MUST BE == WITH input_batch_size
 
     //atm the batch size is linked to the number of neurons
+    //The batch_size is just used for the biases to be added... Because nalgebra can add a vector to a matrix
     let layer1 = DenseLayer::new( batch_size, n_samples_inputs, n_neurons_layer1);
-    let lf1 = layer1.forward(&inputs);
+    let lf1 = layer1.forward(&inputs, &layer1.weights, &layer1.biases);
     let activated1 = ReluActivation(  &lf1);
     println!("{}", activated1);
 
     let layer2 = DenseLayer::new( batch_size, n_neurons_layer1, n_neurons_layer2);
-    let lf2 = layer2.forward(&activated1);
+    let lf2 = layer2.forward(&activated1, &layer2.weights, &layer2.biases);
     let softed_max = SoftMax(batch_size,n_neurons_layer2,&lf2);
     println!("{}", softed_max);
 
@@ -177,4 +170,57 @@ fn main() {
 
     //println!("{}", Relu(2.0));
 
+}
+
+
+#[cfg(test)]
+mod tests {
+    use na::{DMatrix, RowDVector};
+    use crate::DenseLayer;
+    use approx::relative_eq;
+
+    #[test]
+    fn test_model() {
+
+        let n_samples_inputs = 4;
+        let n_neurons_layer1 = 3;
+        let n_neurons_layer2 = 3;
+        let batch_size = 3;
+
+        let inputs = DMatrix::from_row_slice(batch_size,n_samples_inputs, &[
+            1.0, 2.0, 3.0, 2.5,
+            2.0, 5.0, -1.0, 2.0,
+            -1.5, 2.7, 3.3, -0.8,
+        ]);
+        println!("inputs : {}", inputs);
+
+        let weights = DMatrix::from_row_slice(n_neurons_layer1, n_samples_inputs,  &[
+            0.2, 0.8, -0.5, 1.0,
+            0.5, -0.91, 0.26, -0.5,
+            -0.26, -0.27, 0.17, 0.87
+        ]);
+        let biases = RowDVector::from_vec(vec![2.0, 3.0, 0.5]);
+
+        let weights2 = DMatrix::from_row_slice(batch_size, n_neurons_layer1,  &[
+            0.1, -0.14, 0.5,
+            -0.5, 0.12, -0.33,
+            -0.44, 0.73, -0.13,
+        ]);
+        let biases2 = RowDVector::from_vec(vec![-1.0, 2.0, -0.5]);
+
+        let layer1 = DenseLayer::new(batch_size, n_samples_inputs, n_neurons_layer1);
+        let lf1 = layer1.forward(&inputs, &weights, &biases);
+
+        let layer2 = DenseLayer::new(batch_size, n_neurons_layer1, n_neurons_layer1);
+        let lf2 = layer1.forward(&lf1, &weights2, &biases2);
+
+        let result = DMatrix::from_row_slice(n_neurons_layer1, n_neurons_layer2,  &[
+            0.5031, -1.04185, -2.03875,
+            0.2434, -2.7332, -5.7633,
+            -0.99314, 1.41254, -0.35655,
+        ]);
+
+        relative_eq!(lf2, result, epsilon = f64::EPSILON);
+
+    }
 }
