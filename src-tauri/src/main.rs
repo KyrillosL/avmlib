@@ -16,6 +16,7 @@ use avmlib::spiral::*;
 
 use std::ops::DivAssign;
 use approx::assert_ulps_eq;
+use num::clamp;
 
 //use avmlib::dot_product::*;
 extern crate nalgebra as na;
@@ -76,6 +77,11 @@ fn ReluFunction(x: Precision) -> Precision{
     }
 }
 
+fn ClipLoss(inputs: &DMatrix<Precision>) -> DMatrix<Precision>{
+    let r = inputs.map(|x| clamp(x, 1e-7, 1.0-1e-7));
+    r
+}
+
 //take [[1,0,0], [0,1,0], [0,1,0]] as target -> One Hot
 fn LossSparse(inputs: &DMatrix<Precision>, targets:  &DMatrix<Precision>) -> Precision {
     assert!(targets.shape().0 > 1, "targets.shape().0 = {}, should be > = {}, Wrong target shape, Use LossCategorical?", targets.shape().0, 1);
@@ -83,7 +89,8 @@ fn LossSparse(inputs: &DMatrix<Precision>, targets:  &DMatrix<Precision>) -> Pre
     assert_eq!(inputs.ncols(), targets.ncols());
     println!("inputs {}", inputs);
     println!("targets {}", targets);
-    let confidence_matrix = inputs.component_mul(targets);
+    let clipped = ClipLoss(inputs);
+    let confidence_matrix = clipped.component_mul(targets);
     println!("Confidence {}", confidence_matrix);
     let sum_confidence_matrix= confidence_matrix.column_sum();
     println!("sum_confidence_matrix {}", sum_confidence_matrix);
@@ -100,19 +107,16 @@ fn LossCategorical(inputs: &DMatrix<Precision>, targets:  &DMatrix<Precision>) -
     assert_eq!(inputs.nrows(), targets.len());
     println!("inputs {}", inputs);
     println!("targets {}", targets);
-
+    let clipped = ClipLoss(inputs);
     let mut sum_confidence_matrix =  RowDVector::<Precision>::zeros(targets.len());
     for i in 0..inputs.nrows(){
-        sum_confidence_matrix[i] = inputs[(i, targets[i as usize] as usize)];
+        sum_confidence_matrix[i] = clipped[(i, targets[i as usize] as usize)];
     }
-
     println!("sum_confidence_matrix {}", sum_confidence_matrix);
-
     let neg_log_matrix = sum_confidence_matrix.map(|x| -x.ln());
     println!("neg_log_matrix {}", neg_log_matrix);
     let r = neg_log_matrix.mean();
     println!("r {}", r);
-
     return r;
 }
 
@@ -297,5 +301,28 @@ mod tests {
         let r = LossCategorical(&outputs, &targets);
         //assert_eq!(r, 0.38506088005216804, "{}", epsilon = f64::EPSILON);
         assert_eq!(r, 0.38506088005216804);
+    }
+
+    #[test]
+    fn test_loss_ln() {
+        let outputs = DMatrix::from_row_slice(1,3, &[
+            0.0, 0.1, 0.2
+        ]);
+        let targets = DMatrix::from_row_slice(1,1, &[0.0]);
+        let r = LossCategorical(&outputs, &targets);
+        //assert_eq!(r, 0.38506088005216804, "{}", epsilon = f64::EPSILON);
+        assert_eq!(r, 16.11809565095832);
+
+        let outputs2 = DMatrix::from_row_slice(2,3, &[
+            0.0, 0.1, 0.2,
+            0.0, 0.1, 0.2
+        ]);
+        let targets2 = DMatrix::from_row_slice(2,3, &[
+            1.0, 0.0, 0.0,
+            1.0, 0.0, 0.0,
+        ]);
+        let r2 = LossSparse(&outputs2, &targets2);
+        //assert_eq!(r, 0.38506088005216804, "{}", epsilon = f64::EPSILON);
+        assert_eq!(r2, 16.11809565095832);
     }
 }

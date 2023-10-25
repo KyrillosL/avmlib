@@ -28,6 +28,7 @@ plotters = "*"
 rand_xorshift="*"
 itertools = "0.8"
 approx="*"
+num="*"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
