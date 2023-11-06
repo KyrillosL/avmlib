@@ -55,7 +55,7 @@ fn SoftMax(r: usize, c: usize, inputs: &DMatrix<Precision>) -> DMatrix<Precision
     //TODO : use Apply()
     //m.apply(|v| v.exp());
     let mut e = inputs.map(|v| v.exp());
-    println!("{}", &e);
+    println!("Exponentied{}", &e);
     let v4 = DMatrix::<Precision>::from_fn(r, c, |i, _| e.row(i).iter().sum());
 
     for j in 0..r {
@@ -81,6 +81,13 @@ fn ClipLoss(inputs: &DMatrix<Precision>) -> DMatrix<Precision>{
     let r = inputs.map(|x| clamp(x, 1e-7, 1.0-1e-7));
     r
 }
+
+
+/*
+LOSS
+TODO -> convert one-hot encoded to one array with:
+class_targets = np.argmax(class_targets, axis= 1)
+*/
 
 //take [[1,0,0], [0,1,0], [0,1,0]] as target -> One Hot
 fn LossSparse(inputs: &DMatrix<Precision>, targets:  &DMatrix<Precision>) -> Precision {
@@ -117,6 +124,32 @@ fn LossCategorical(inputs: &DMatrix<Precision>, targets:  &DMatrix<Precision>) -
     println!("neg_log_matrix {}", neg_log_matrix);
     let r = neg_log_matrix.mean();
     println!("r {}", r);
+    return r;
+}
+
+//take [0,1,1] as target
+//Todo -> handle targets as Precision then convert to usize ?
+fn Accuracy(inputs: &DMatrix<Precision>,  targets:  &DMatrix<usize>) -> Precision{
+    assert_eq!(targets.shape().0, 1, "Wrong target shape, Use LossSparse?");
+
+    assert_eq!(inputs.nrows(), targets.len(), "Accuracy : inputs number of rows should be the same as targets");
+
+    let mut r = 0.0;
+    let mut index = 0;
+
+    for row in inputs.row_iter(){
+
+        //println!("{:?}", row);
+
+        let args_max = row.iamax_full();
+        //println!("{:?}", args_max);
+        if args_max.1 == targets[index]{
+            r += 1.0;
+        }
+        index += 1;
+    }
+
+    r /= targets.len() as Precision;
     return r;
 }
 
@@ -207,7 +240,7 @@ fn main() {
     let layer2 = DenseLayer::new( batch_size, n_neurons_layer1, n_neurons_layer2);
     let lf2 = layer2.forward(&activated1, &layer2.weights, &layer2.biases);
     let softed_max = SoftMax(batch_size,n_neurons_layer2,&lf2);
-    println!("{}", softed_max);
+    println!("softmax{}", softed_max);
 
     /*
     tauri::Builder::default()
@@ -224,10 +257,9 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use na::{DMatrix, RowDVector};
-    use crate::{DenseLayer, LossSparse, LossCategorical};
+    use crate::{DenseLayer, LossSparse, LossCategorical, Accuracy};
     use approx::relative_eq;
 
-    /*
     #[test]
     fn test_model() {
 
@@ -271,7 +303,7 @@ mod tests {
 
         relative_eq!(lf2, result, epsilon = f64::EPSILON);
     }
-    */
+
 
     #[test]
     fn test_loss_sparse() {
@@ -325,4 +357,18 @@ mod tests {
         //assert_eq!(r, 0.38506088005216804, "{}", epsilon = f64::EPSILON);
         assert_eq!(r2, 16.11809565095832);
     }
+
+    #[test]
+    fn test_accuracy() {
+        let outputs = DMatrix::from_row_slice(3,3, &[
+            0.7, 0.2, 0.1,
+            0.5, 0.1, 0.4,
+            0.02, 0.9, 0.08,
+        ]);
+        let targets = DMatrix::from_row_slice(1,3, &[0, 1, 1]);
+        let r = Accuracy(&outputs, &targets);
+        assert_eq!(r, 0.6666666666666666);
+    }
+
+
 }
