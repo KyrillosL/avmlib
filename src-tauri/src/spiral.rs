@@ -6,7 +6,7 @@ use crate::constants::*;
 use nalgebra::{DMatrix, RowDVector};
 
 
-pub fn create_data_spiral(samples: usize, classes: usize) -> (Vec<f64>, Vec<f64>, Vec<u32>) /* -> (Vec<(f64, f64)>, Vec<u8>)*/{
+pub fn create_data_spiral(samples: usize, classes: usize) -> (Vec<f64>, Vec<f64>, Vec<usize>) /* -> (Vec<(f64, f64)>, Vec<u8>)*/{
 
     let n = samples / classes;
     //println!("{}", n);
@@ -35,7 +35,7 @@ pub fn create_data_spiral(samples: usize, classes: usize) -> (Vec<f64>, Vec<f64>
             let index = ix.start + i;
             x[index] = r_val * f64::sin(t_val);
             y[index] = r_val * f64::cos(t_val);
-            c[index] = j as u32;
+            c[index] = j as usize;
         }
     }
 
@@ -78,7 +78,7 @@ pub fn create_data_spiral(samples: usize, classes: usize) -> (Vec<f64>, Vec<f64>
 }
 
 
-pub fn visualize(x: &Vec<f64>, y: &Vec<f64>, c: &Vec<u32>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn visualize(x: &Vec<f64>, y: &Vec<f64>, c: &Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     // Visualize the data
     let root =
         BitMapBackend::new("plots/scatter.png", (800, 600)).into_drawing_area();
@@ -89,7 +89,7 @@ pub fn visualize(x: &Vec<f64>, y: &Vec<f64>, c: &Vec<u32>) -> Result<(), Box<dyn
     let y_min = -1.0;
     let y_max = 1.0;
 
-    let ok : Vec<(&f64, &f64, &u32)> = izip!(x, y, c).collect();
+    let ok : Vec<(&f64, &f64, &usize)> = izip!(x, y, c).collect();
 
     let mut chart = ChartBuilder::on(&root)
         .x_label_area_size(40)

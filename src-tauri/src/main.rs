@@ -112,18 +112,18 @@ fn LossSparse(inputs: &DMatrix<Precision>, targets:  &DMatrix<Precision>) -> Pre
 fn LossCategorical(inputs: &DMatrix<Precision>, targets:  &DMatrix<Precision>) -> Precision {
     assert_eq!(targets.shape().0, 1, "Wrong target shape, Use LossSparse?");
     assert_eq!(inputs.nrows(), targets.len());
-    println!("inputs {}", inputs);
-    println!("targets {}", targets);
+    //println!("inputs {}", inputs);
+    //println!("targets {}", targets);
     let clipped = ClipLoss(inputs);
     let mut sum_confidence_matrix =  RowDVector::<Precision>::zeros(targets.len());
     for i in 0..inputs.nrows(){
         sum_confidence_matrix[i] = clipped[(i, targets[i as usize] as usize)];
     }
-    println!("sum_confidence_matrix {}", sum_confidence_matrix);
+    //println!("sum_confidence_matrix {}", sum_confidence_matrix);
     let neg_log_matrix = sum_confidence_matrix.map(|x| -x.ln());
-    println!("neg_log_matrix {}", neg_log_matrix);
+    //println!("neg_log_matrix {}", neg_log_matrix);
     let r = neg_log_matrix.mean();
-    println!("r {}", r);
+    //println!("r {}", r);
     return r;
 }
 
@@ -234,13 +234,30 @@ fn main() {
     //The batch_size is just used for the biases to be added... Because nalgebra can add a vector to a matrix
     let layer1 = DenseLayer::new( batch_size, n_samples_inputs, n_neurons_layer1);
     let lf1 = layer1.forward(&inputs, &layer1.weights, &layer1.biases);
-    let activated1 = ReluActivation(  &lf1);
+    let activated1 = ReluActivation(&lf1);
     println!("{}", activated1);
 
     let layer2 = DenseLayer::new( batch_size, n_neurons_layer1, n_neurons_layer2);
     let lf2 = layer2.forward(&activated1, &layer2.weights, &layer2.biases);
     let softed_max = SoftMax(batch_size,n_neurons_layer2,&lf2);
-    println!("softmax{}", softed_max);
+    println!("softmax: {}", softed_max);
+
+
+
+    let Y_Precision = c.iter().map(|&e| e as Precision).collect();
+    let Y_Row_Pecision : RowDVector<Precision> = RowDVector::from_vec(Y_Precision);
+    let Y_Loss: DMatrix<Precision> = DMatrix::from_rows(&[Y_Row_Pecision]);
+
+    let loss = LossCategorical(&softed_max, &Y_Loss);
+    println!("Loss: {}", loss);
+
+
+    let Y_row : RowDVector<usize> = RowDVector::from_vec(c);
+    let Y: DMatrix<usize> = DMatrix::from_rows(&[Y_row]);
+
+
+    let accuracy = Accuracy(&softed_max, &Y);
+    println!("Accuracy: {}", accuracy);
 
     /*
     tauri::Builder::default()
@@ -302,6 +319,7 @@ mod tests {
         ]);
 
         relative_eq!(lf2, result, epsilon = f64::EPSILON);
+
     }
 
 
